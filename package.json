@@ -1,0 +1,22 @@
+{
+  "name": "wallet-guardian",
+  "version": "0.1.0",
+  "description": "Wallet Guardian — approval risk scanner with exploit context, powered by Arkiv DB-Chains",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "@solana/web3.js": "^1.98.4",
+    "ethers": "^6.13.0",
+    "express": "^4.21.0"
+  },
+  "emblem_build": {
+    "tables": [
+      { "name": "wg_watched", "schema": "CREATE TABLE IF NOT EXISTS wg_watched (id INTEGER PRIMARY KEY AUTOINCREMENT, address TEXT NOT NULL, chain TEXT NOT NULL DEFAULT 'ethereum', label TEXT, created_at TEXT DEFAULT (datetime('now')), UNIQUE(address, chain))" },
+      { "name": "wg_alerts", "schema": "CREATE TABLE IF NOT EXISTS wg_alerts (id INTEGER PRIMARY KEY AUTOINCREMENT, address TEXT NOT NULL, chain TEXT NOT NULL DEFAULT 'ethereum', severity TEXT NOT NULL DEFAULT 'high', title TEXT NOT NULL, detail TEXT, token TEXT, spender TEXT, exploit_id TEXT, acknowledged INTEGER DEFAULT 0, created_at TEXT DEFAULT (datetime('now')))" },
+      { "name": "wg_snapshots", "schema": "CREATE TABLE IF NOT EXISTS wg_snapshots (id INTEGER PRIMARY KEY AUTOINCREMENT, address TEXT NOT NULL, chain TEXT NOT NULL, approval_key TEXT NOT NULL, risk TEXT, seen_at TEXT DEFAULT (datetime('now')), UNIQUE(address, chain, approval_key))" },
+      { "name": "wg_exploits", "schema": "CREATE TABLE IF NOT EXISTS wg_exploits (id TEXT PRIMARY KEY, protocol TEXT, date TEXT, loss_usd INTEGER, chain TEXT, pattern TEXT, vector TEXT, summary TEXT, lesson TEXT, link TEXT, source TEXT DEFAULT 'defillama', created_at TEXT DEFAULT (datetime('now')))" }
+    ]
+  }
+}

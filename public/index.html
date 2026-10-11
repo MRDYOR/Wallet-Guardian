@@ -1,0 +1,818 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Wallet Guardian — Approval Risk Scanner</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0a0c11; --panel:#111419; --panel2:#161a21; --panel3:#1c212b;
+    --line:rgba(255,255,255,.07); --line2:rgba(255,255,255,.12);
+    --text:#e7eaf0; --muted:#828b9c; --muted2:#a7afbf;
+    --accent:#5b7cfa; --accent2:#7d97ff;
+    --red:#ec5a68; --redbg:rgba(236,90,104,.1); --redln:rgba(236,90,104,.32);
+    --amber:#e0a63c; --amberbg:rgba(224,166,60,.1); --amberln:rgba(224,166,60,.3);
+    --green:#3fbf87; --greenbg:rgba(63,191,135,.1); --greenln:rgba(63,191,135,.3);
+    --r:14px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{-webkit-text-size-adjust:100%}
+  body{background:var(--bg);color:var(--text);font-family:'Inter',system-ui,sans-serif;font-size:14px;line-height:1.55;-webkit-font-smoothing:antialiased;letter-spacing:-.01em}
+  a{color:var(--accent2);text-decoration:none} a:hover{opacity:.85}
+  svg{display:block}
+  .wrap{max-width:900px;margin:0 auto;padding:34px 20px 90px}
+  .icn{width:16px;height:16px;stroke:currentColor;stroke-width:2;fill:none;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
+
+  /* header */
+  header{margin-bottom:26px}
+  .brand{display:flex;align-items:center;gap:11px}
+  .brand .logo{width:38px;height:38px;border-radius:11px;background:linear-gradient(140deg,var(--accent),#8b5cf6);display:flex;align-items:center;justify-content:center}
+  .brand .logo svg{width:20px;height:20px;stroke:#fff;stroke-width:2.2;fill:none}
+  .brand h1{font-size:20px;font-weight:700;letter-spacing:-.02em}
+  .brand .sub{font-size:12.5px;color:var(--muted)}
+  .lead{color:var(--muted2);font-size:14px;margin-top:14px;max-width:640px}
+
+  /* control card */
+  .controls{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:16px;margin-top:20px}
+  .cbar{display:flex;gap:10px}
+  .selwrap{position:relative;flex-shrink:0}
+  select{appearance:none;-webkit-appearance:none;background:var(--panel2);border:1px solid var(--line2);border-radius:11px;padding:0 34px 0 14px;height:44px;color:var(--text);font-family:inherit;font-size:13.5px;font-weight:500;cursor:pointer;min-width:132px}
+  select:focus{outline:none;border-color:var(--accent)}
+  .selwrap .chev{position:absolute;right:12px;top:50%;transform:translateY(-50%);pointer-events:none;color:var(--muted)}
+  input#addr{flex:1;min-width:0;background:var(--panel2);border:1px solid var(--line2);border-radius:11px;height:44px;padding:0 15px;color:var(--text);font-size:14px;font-family:'SF Mono',ui-monospace,monospace}
+  input#addr:focus{outline:none;border-color:var(--accent)}
+  button{cursor:pointer;font-family:inherit;font-weight:600;border:none;border-radius:11px;transition:.14s ease}
+  .btn{height:44px;padding:0 20px;font-size:14px;display:inline-flex;align-items:center;gap:7px;justify-content:center}
+  .btn-primary{background:var(--accent);color:#fff}
+  .btn-primary:hover{background:var(--accent2)}
+  .btn-ghost{background:var(--panel2);border:1px solid var(--line2);color:var(--muted2)}
+  .btn-ghost:hover{border-color:var(--line2);color:var(--text);background:var(--panel3)}
+  .subrow{display:flex;gap:9px;margin-top:11px;flex-wrap:wrap}
+  .subrow .btn{height:38px;padding:0 15px;font-size:13px;font-weight:500}
+  .status{font-size:12.5px;color:var(--muted);margin-top:12px;display:flex;align-items:center;gap:7px}
+  .status b{color:var(--muted2);font-weight:600}
+
+  /* sections */
+  section{margin-top:24px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r)}
+  .sec-head{display:flex;align-items:center;gap:9px;padding:0 0 2px}
+  .sec-head h2{font-size:15px;font-weight:650}
+  .sec-head .ico{color:var(--muted2)}
+  .tag{font-size:10px;font-weight:700;letter-spacing:.04em;padding:3px 8px;border-radius:6px;text-transform:uppercase}
+  .tag.blue{background:rgba(91,124,250,.14);color:#9db0ff}
+  .tag.amber{background:var(--amberbg);color:#f0c56e}
+  .tag.green{background:var(--greenbg);color:#7ad9ac}
+  .muted-note{color:var(--muted);font-size:12.5px}
+
+  /* banner */
+  .banner{border:1px solid var(--line);border-left-width:3px;border-radius:10px;padding:12px 14px;font-size:13px;color:var(--muted2);display:flex;gap:10px;align-items:flex-start;margin-bottom:14px;background:var(--panel2)}
+  .banner.green{border-left-color:var(--green)} .banner.red{border-left-color:var(--red)} .banner.blue{border-left-color:var(--accent)}
+  .banner .icn{margin-top:1px}
+
+  /* summary */
+  .summary{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
+  .stat{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:15px 16px}
+  .stat .n{font-size:24px;font-weight:750;letter-spacing:-.03em}
+  .stat .l{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-top:3px;font-weight:600}
+  .stat.high .n{color:var(--red)} .stat.med .n{color:var(--amber)} .stat.low .n{color:var(--green)}
+
+  /* security overview */
+  .ov{background:linear-gradient(180deg,var(--panel2),var(--panel));border:1px solid var(--line2);border-radius:var(--r);padding:18px;margin-bottom:16px}
+  .ov-top{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;padding-bottom:14px;border-bottom:1px solid var(--line)}
+  .ov-l{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;font-weight:600}
+  .ov-score{font-size:38px;font-weight:800;letter-spacing:-.03em;line-height:1}
+  .ov-score span{font-size:15px;color:var(--muted);font-weight:600}
+  .ov-exp{text-align:right}
+  .ov-exp-v{font-size:26px;font-weight:750;letter-spacing:-.02em;color:var(--text)}
+  .ov-stats{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-top:14px}
+  .ov-s{text-align:center}
+  .ov-s .n{font-size:19px;font-weight:750}
+  .ov-s .l{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.03em;margin-top:2px;font-weight:600}
+  .ov-s.crit .n{color:var(--red)} .ov-s.rev .n{color:#f0906a} .ov-s.rev2 .n{color:var(--amber)} .ov-s.safe .n{color:var(--green)}
+  .ov-fresh{font-size:11.5px;color:var(--muted);margin-top:12px}
+  /* groups */
+  .grp{margin-bottom:18px}
+  .grp-h{display:flex;align-items:center;gap:9px;font-size:12.5px;font-weight:650;color:var(--muted2);text-transform:uppercase;letter-spacing:.04em;margin-bottom:10px}
+  .grp-dot{width:9px;height:9px;border-radius:3px}
+  .grp-dot.critical{background:var(--red)} .grp-dot.revoke{background:#f0906a} .grp-dot.review{background:var(--amber)} .grp-dot.safe{background:var(--green)}
+  .grp-n{background:var(--panel3);color:var(--muted);border-radius:6px;padding:1px 7px;font-size:11px}
+  /* approval cards */
+  .list{display:flex;flex-direction:column;gap:12px}
+  .ac{position:relative;background:var(--panel);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+  .ac::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px}
+  .ac.high::before{background:var(--red)} .ac.medium::before{background:var(--amber)} .ac.low::before{background:var(--green)}
+  .ac-top{display:flex;align-items:flex-start;gap:14px;padding:16px 18px 6px}
+  .ac-main{flex:1;min-width:0}
+  .ac-title{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .ac-title .tk{font-weight:650;font-size:15px}
+  .ac-title .sym{color:var(--muted);font-weight:500}
+  .chip{font-size:10.5px;font-weight:650;letter-spacing:.03em;padding:3px 8px;border-radius:6px}
+  .chip.cat{background:var(--panel3);color:var(--muted2);border:1px solid var(--line2)}
+  .chip.high{background:var(--redbg);color:#f2909a} .chip.medium{background:var(--amberbg);color:#eec27e} .chip.low{background:var(--greenbg);color:#82d7b2}
+  .chip.flag{background:rgba(236,90,104,.13);color:#f2909a}
+  .chip.hv{background:rgba(91,124,250,.13);color:#9db0ff}
+  .ac-meta{color:var(--muted);font-size:12px;margin-top:6px;font-family:'SF Mono',ui-monospace,monospace}
+  .ac-meta .sp{color:var(--muted2)}
+  .ac-allow{text-align:right;flex-shrink:0}
+  .ac-allow .v{font-weight:700;font-size:15px} .ac-allow.unl .v{color:var(--red)}
+  .ac-allow .s{font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-top:1px}
+  .ac-allow .risk{font-size:12px;font-weight:700;color:var(--amber);margin-top:5px}
+  .chip.rec{background:transparent;border:1px solid;padding:3px 9px}
+  .chip.rec.KEEP{color:var(--green);border-color:var(--greenln)} .chip.rec.REVIEW{color:var(--amber);border-color:var(--amberln)}
+  .chip.rec.REVOKE,.chip.rec[data-r="REVOKE NOW"]{color:#f2909a;border-color:var(--redln)}
+  .chip.ok{background:var(--greenbg);color:#82d7b2}
+  .chip.conf{background:var(--panel3);color:var(--muted2);border:1px solid var(--line2);letter-spacing:.02em}
+  .chip.conf.ok{background:var(--greenbg);color:#82d7b2;border:none}
+  .src{padding:2px 18px 0;font-size:11.5px;color:var(--muted)}
+  .src b{color:var(--muted2);font-weight:600}
+  .ac-check{position:absolute;top:14px;right:14px;width:19px;height:19px;cursor:pointer;accent-color:var(--accent)}
+  /* batch bar */
+  .batchbar{position:fixed;left:50%;transform:translateX(-50%);bottom:20px;background:var(--panel);border:1px solid var(--line2);border-radius:13px;padding:10px 12px 10px 16px;display:flex;align-items:center;gap:14px;box-shadow:0 8px 30px rgba(0,0,0,.5);z-index:80}
+  .batchbar .bt{font-size:13px;color:var(--muted2)} .batchbar .bt b{color:var(--text)}
+  .reasons{padding:6px 18px 2px;display:flex;flex-direction:column;gap:5px}
+  .rz{display:flex;gap:9px;font-size:12.5px;color:var(--muted2);align-items:flex-start}
+  .rz .rd{width:5px;height:5px;border-radius:50%;background:var(--muted);margin-top:7px;flex-shrink:0}
+  .rz.hi .rd{background:var(--red)}
+  .exp{margin:12px 18px 0;background:var(--redbg);border:1px solid var(--redln);border-radius:11px;padding:12px 14px}
+  .exp-h{display:flex;align-items:center;gap:8px;font-weight:650;color:#f2909a;font-size:12.5px}
+  .exp-i{font-size:12px;color:var(--muted2);margin-top:8px;padding-top:8px;border-top:1px solid var(--redln)}
+  .exp-i:first-of-type{border-top:none;padding-top:2px}
+  .exp-i b{color:#f4a7af}
+  .detail{display:none;padding:2px 18px 14px}
+  .detail.open{display:block}
+  .detail .box{background:var(--panel2);border:1px solid var(--line);border-radius:11px;padding:13px 15px;font-size:12.5px;color:var(--muted2)}
+  .detail .box h4{color:var(--text);font-size:12.5px;margin-bottom:6px;font-weight:650}
+  .ac-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 18px 15px}
+  .btn-sm{height:36px;padding:0 15px;font-size:12.5px;border-radius:9px;display:inline-flex;align-items:center;gap:6px}
+  .btn-learn{background:transparent;border:1px solid var(--line2);color:var(--muted2)}
+  .btn-learn:hover{color:var(--text);border-color:var(--line2)}
+  .btn-revoke,.btn-rv-amber,.btn-rv-ghost{display:inline-flex;align-items:center;gap:6px;font-weight:600;transition:.14s ease}
+  .ricn{width:14px;height:14px;stroke:currentColor;stroke-width:2.2;fill:none;stroke-linecap:round;flex-shrink:0}
+  .btn-revoke{background:var(--red);color:#fff;box-shadow:0 1px 0 rgba(0,0,0,.2)}
+  .btn-revoke:hover{filter:brightness(1.08);transform:translateY(-1px);box-shadow:0 4px 14px rgba(236,90,104,.35)}
+  .btn-rv-amber{background:transparent;color:var(--amber);border:1px solid var(--amberln)}
+  .btn-rv-amber:hover{background:var(--amberbg);transform:translateY(-1px)}
+  .btn-rv-ghost{background:transparent;color:var(--muted2);border:1px solid var(--line2)}
+  .btn-rv-ghost:hover{color:var(--text);border-color:var(--line2)}
+  .btn-revoke:disabled,.btn-rv-amber:disabled,.btn-rv-ghost:disabled{opacity:.4;cursor:not-allowed;filter:none;transform:none;box-shadow:none}
+
+  /* monitor / guardian cards */
+  .pad{padding:20px}
+  .pad p{color:var(--muted2);font-size:13px;margin-top:8px}
+  .mon-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+  .alerts{margin-top:14px;display:flex;flex-direction:column;gap:10px}
+  .alert{background:var(--redbg);border:1px solid var(--redln);border-radius:11px;padding:13px 15px}
+  .alert .t{font-weight:650;color:#f2909a;font-size:13px;display:flex;gap:8px;align-items:center}
+  .alert .d{color:var(--muted2);font-size:12.5px;margin-top:5px}
+  .alert-actions{margin-top:10px;display:flex;gap:8px}
+  .empty-line{color:var(--muted);font-size:12.5px;margin-top:12px}
+  .steps{display:flex;flex-direction:column;gap:8px;margin-top:14px}
+  .step{display:flex;gap:12px;align-items:flex-start;padding:12px 14px;background:var(--panel2);border:1px solid var(--line);border-radius:11px;font-size:12.5px;color:var(--muted2)}
+  .step .num{flex-shrink:0;width:23px;height:23px;border-radius:7px;background:var(--panel3);border:1px solid var(--line2);display:flex;align-items:center;justify-content:center;font-size:11.5px;font-weight:700;color:var(--muted2)}
+  .step b{color:var(--text);font-weight:600}
+  .step.final{border-color:var(--greenln);background:var(--greenbg)} .step.final .num{background:var(--green);border-color:var(--green);color:#04120a}
+
+  /* exploit grid */
+  .exp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin-top:14px}
+  .exp-card{background:var(--panel2);border:1px solid var(--line);border-radius:11px;padding:13px 14px;cursor:pointer;transition:.14s}
+  .exp-card:hover{border-color:var(--line2);background:var(--panel3);transform:translateY(-1px)}
+  .exp-card .p{font-weight:650;font-size:13px}
+  .exp-card .loss{color:var(--red);font-weight:650;font-size:12.5px;margin-top:2px}
+  .exp-card .dt{color:var(--muted);font-size:11px;margin-top:4px}
+  .exp-card .pat{display:inline-block;font-size:10px;color:var(--muted2);background:var(--panel3);padding:2px 7px;border-radius:5px;margin-top:9px;font-family:'SF Mono',ui-monospace,monospace}
+
+  /* modal */
+  .modal{position:fixed;inset:0;background:rgba(4,6,10,.66);display:flex;align-items:center;justify-content:center;z-index:100;backdrop-filter:blur(4px)}
+  .modal-box{background:var(--panel);border:1px solid var(--line2);border-radius:16px;padding:18px;width:min(360px,92vw)}
+  .modal-h{font-weight:650;font-size:15px;margin-bottom:14px}
+  .wopt{display:flex;align-items:center;gap:11px;width:100%;background:var(--panel2);border:1px solid var(--line2);color:var(--text);padding:12px 14px;border-radius:11px;font-size:13.5px;font-weight:500;margin-bottom:8px;text-align:left}
+  .wopt:hover{border-color:var(--accent);background:var(--panel3)}
+  .wopt img,.wopt .wi{width:22px;height:22px;border-radius:6px;flex-shrink:0;object-fit:contain}
+  .wopt .wi{background:var(--panel3);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--muted2)}
+  .wopt.cancel{justify-content:center;color:var(--muted);background:transparent;border-color:transparent;margin-top:2px}
+  /* exploit detail modal */
+  .ex-head{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;padding-bottom:14px;border-bottom:1px solid var(--line);margin-bottom:14px}
+  .ex-title{font-size:18px;font-weight:700}
+  .ex-sub{font-size:12px;color:var(--muted);margin-top:3px;text-transform:capitalize}
+  .ex-loss{color:var(--red);font-weight:750;font-size:19px;text-align:right;line-height:1}
+  .ex-loss span{display:block;font-size:10px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-top:3px}
+  .ex-row{display:flex;gap:12px;font-size:12.5px;margin-bottom:9px}
+  .ex-row .ex-k{color:var(--muted);width:120px;flex-shrink:0}
+  .ex-row .pat{font-family:'SF Mono',ui-monospace,monospace;background:var(--panel3);padding:1px 7px;border-radius:5px;font-size:11px;color:var(--muted2)}
+  .ex-body{margin-top:6px}
+  .ex-body h4{font-size:12.5px;font-weight:650;margin:12px 0 4px;color:var(--text)}
+  .ex-body p{font-size:12.5px;color:var(--muted2);line-height:1.6}
+  .ex-foot{display:flex;gap:10px;justify-content:flex-end;margin-top:18px}
+  .ex-foot .btn{text-decoration:none}
+  .wl-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+  .wl-grid .btn{text-decoration:none}
+  /* sandbox */
+  #sbStage{margin-top:16px}
+  .sb-wallet{display:flex;gap:12px;align-items:center;justify-content:space-between;background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+  .sb-wallet .lbl{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;font-weight:600}
+  .sb-bal{font-size:26px;font-weight:750;letter-spacing:-.02em}
+  .sb-bal.drain{color:var(--red)} .sb-bal.safe{color:var(--green)}
+  .sb-appr{font-size:12px;color:var(--muted);margin-top:3px;font-family:'SF Mono',ui-monospace,monospace}
+  .sb-appr b{color:var(--red)}
+  .sb-narr{background:var(--panel2);border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:10px;padding:13px 15px;margin-top:12px;font-size:13.5px;color:var(--muted2)}
+  .sb-narr.bad{border-left-color:var(--red)} .sb-narr.good{border-left-color:var(--green)}
+  .sb-narr b{color:var(--text)}
+  .sb-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+  .sb-step{font-size:11px;color:var(--muted);letter-spacing:.05em;text-transform:uppercase;font-weight:600;margin-bottom:2px}
+  .sb-guard{display:flex;gap:10px;align-items:flex-start;background:var(--redbg);border:1px solid var(--redln);border-radius:10px;padding:12px 14px;margin-top:12px;font-size:13px;color:var(--muted2)}
+  .sb-guard b{color:#f2909a}
+  .btn-warn{background:var(--amber);color:#1a1204} .btn-warn:hover{filter:brightness(1.06)}
+  .btn-safe{background:var(--green);color:#04120a} .btn-safe:hover{filter:brightness(1.06)}
+
+  .loading,.empty{text-align:center;color:var(--muted);padding:44px 0}
+  .spinner{width:24px;height:24px;border:2.5px solid var(--line2);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 14px}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  footer{text-align:center;color:var(--muted);font-size:11.5px;margin-top:40px;line-height:1.7}
+  @media(max-width:620px){.summary{grid-template-columns:repeat(2,1fr)}.cbar{flex-wrap:wrap}.selwrap,select{width:100%}.ac-allow{display:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand">
+      <div class="logo"><svg viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3z"/><path d="M9 12l2 2 4-4"/></svg></div>
+      <div>
+        <h1>Wallet Guardian</h1>
+        <div class="sub">Approval risk scanner with exploit context</div>
+      </div>
+    </div>
+    <p class="lead">Scan the on-chain permissions your wallet has granted — token allowances, NFT operators, LP &amp; router approvals, and Permit2 — see why each is risky, and match it against the historical hacks that used the same pattern.</p>
+
+    <div class="controls">
+      <div class="cbar">
+        <div class="selwrap">
+          <select id="chain" title="Chain" onchange="if(document.getElementById('addr').value.trim())scan()">
+            <option value="ethereum">Ethereum</option>
+            <option value="base">Base</option>
+            <option value="arbitrum">Arbitrum</option>
+            <option value="polygon">Polygon</option>
+            <option value="optimism">Optimism</option>
+            <option value="solana">Solana</option>
+          </select>
+          <svg class="icn chev" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+        </div>
+        <input id="addr" placeholder="Wallet address — EVM 0x… or Solana" spellcheck="false" />
+        <button class="btn btn-primary" onclick="scan()">Scan</button>
+      </div>
+      <div class="subrow">
+        <button class="btn btn-ghost" onclick="scan(true)">View demo wallet</button>
+        <button class="btn btn-ghost" id="connectBtn" onclick="connectWallet()">Connect EVM wallet</button>
+        <button class="btn btn-ghost" id="connectSolBtn" onclick="connectSolana()">Connect Solana wallet</button>
+        <button class="btn btn-ghost" onclick="diagnose()" title="Why can't I connect?">Can’t connect?</button>
+      </div>
+      <div class="status" id="walletStatus"><svg class="icn" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01"/></svg><span>Connect a wallet to revoke, or paste any address to scan read-only. 5 EVM chains + Solana, no keys required.</span></div>
+      <div id="iframeHint"></div>
+    </div>
+  </header>
+
+  <div id="output"></div>
+
+  <section class="card pad" id="monitor" style="display:none">
+    <div class="sec-head"><svg class="icn ico" viewBox="0 0 24 24"><path d="M18 8a6 6 0 10-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 01-3.4 0"/></svg><h2>Risk Monitor</h2><span class="tag green">Live</span></div>
+    <p>Watch this wallet in the background. A scheduled job re-scans it and alerts you the moment a spender you've approved is flagged by a new exploit — with one-tap revoke.</p>
+    <div class="mon-actions">
+      <button class="btn btn-primary btn-sm" id="monBtn" onclick="enableMonitor()">Monitor this wallet</button>
+      <button class="btn btn-ghost btn-sm" onclick="loadAlerts()">Refresh</button>
+    </div>
+    <div class="alerts" id="alerts"></div>
+  </section>
+
+  <section class="card pad" id="sandbox">
+    <div class="sec-head"><svg class="icn ico" viewBox="0 0 24 24"><path d="M12 2v20M2 12h20"/><circle cx="12" cy="12" r="9"/></svg><h2>Risk Sandbox — feel the risk</h2><span class="tag blue">Interactive</span></div>
+    <p>Walk through exactly how an approval drains a wallet — fully simulated, no real funds or transactions. Then watch how revoking stops it.</p>
+    <div id="sbStage"></div>
+  </section>
+
+  <section class="card pad">
+    <div class="sec-head"><svg class="icn ico" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg><h2>What Wallet Guardian scans</h2></div>
+    <p><b style="color:var(--green)">Scannable from any address:</b> ERC-20 token allowances, NFT collection operators (setApprovalForAll), LP / DeFi / router approvals, and Permit2 allowances — the standing permissions that can move your assets.</p>
+    <p style="margin-top:8px"><b style="color:var(--amber)">Not derivable from an address:</b> which dApps your wallet is "connected" to, WalletConnect sessions, and CEX/API keys live inside your wallet or a company's servers, never on-chain — so no scanner can read them. Manage those in your wallet's own settings.</p>
+  </section>
+
+  <section class="card pad">
+    <div class="sec-head"><svg class="icn ico" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v6c0 1.7 3.6 3 8 3s8-1.3 8-3V5M4 11v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/></svg><h2>Exploit intelligence</h2><span class="tag blue">Powered by Arkiv · <span id="dbBackend">local</span></span></div>
+    <p>The exploit-pattern database is modeled as Arkiv DB-Chain entities — payload plus queryable attributes like <code>pattern</code> and <code>lossUsd</code> — permissionless and composable. This is the live database the scanner matches your approvals against.</p>
+    <p class="muted-note" id="expSub" style="margin-top:6px"></p>
+    <div class="exp-grid" id="exploitGrid"></div>
+  </section>
+
+  <section class="card pad" style="border-color:var(--greenln)">
+    <div class="sec-head"><svg class="icn ico" viewBox="0 0 24 24" style="stroke:var(--green)"><path d="M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3z"/><path d="M9 12l2 2 4-4"/></svg><h2>Your keys stay yours</h2></div>
+    <p><b>Wallet Guardian is read-only.</b> Scanning an address <b>cannot move your assets</b> — it only reads public on-chain permissions. We never ask for your seed phrase or private keys, never store keys, and never sign or transfer anything without your explicit approval in your own wallet. Revoking is a transaction <i>you</i> sign.</p>
+  </section>
+
+  <footer>
+    Wallet Guardian · exploit data is educational, not financial advice.<br>Every risk classification shows its source — we never hide why something was flagged.
+  </footer>
+</div>
+
+<script src="https://unpkg.com/@solana/web3.js@1.95.3/lib/index.iife.min.js"></script>
+<script>
+let account=null, solAccount=null, evmProvider=null, solProvider=null;
+const inIframe = (function(){ try{ return window.self !== window.top; }catch(e){ return true; } })();
+function openFull(){ window.open(location.href,'_blank','noopener'); }
+
+const fmtUsd=n=>n>=1e9?'$'+(n/1e9).toFixed(1)+'B':n>=1e6?'$'+(n/1e6).toFixed(0)+'M':'$'+(n/1e3).toFixed(0)+'K';
+const short=a=>a?a.slice(0,6)+'…'+a.slice(-4):'';
+const esc=s=>(s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const setStatus=h=>document.getElementById('walletStatus').innerHTML='<svg class="icn" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01"/></svg><span>'+h+'</span>';
+const ALERT_ICON='<svg class="icn" viewBox="0 0 24 24" style="stroke:#f2909a"><path d="M10.3 3.9L1.8 18a2 2 0 001.7 3h17a2 2 0 001.7-3L14.4 3.9a2 2 0 00-3.4 0z"/><path d="M12 9v4M12 17h.01"/></svg>';
+const REVOKE_ICON='<svg class="ricn" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M5.6 5.6l12.8 12.8"/></svg>';
+
+/* ── EVM wallet discovery: EIP-6963 + legacy providers ── */
+const evm6963=[];
+window.addEventListener('eip6963:announceProvider',e=>{ if(!evm6963.find(w=>w.info.uuid===e.detail.info.uuid)) evm6963.push(e.detail); });
+function requestEvm(){ try{ window.dispatchEvent(new Event('eip6963:requestProvider')); }catch(e){} }
+requestEvm();
+function labelFor(p){ return p.isRabby?'Rabby':p.isMetaMask?'MetaMask':p.isTrust||p.isTrustWallet?'Trust Wallet':p.isBitKeep||p.isBitget?'Bitget':p.isCoinbaseWallet?'Coinbase':p.isOkxWallet||p.isOKExWallet?'OKX':'Injected Wallet'; }
+function gatherEvm(){
+  const list=[], seen=new Set();
+  const add=(name,icon,prov)=>{ if(prov&&!seen.has(prov)){ seen.add(prov); list.push({name,icon,prov}); } };
+  evm6963.forEach(w=>add(w.info.name,w.info.icon,w.provider));
+  const eth=window.ethereum;
+  if(eth){ if(Array.isArray(eth.providers)) eth.providers.forEach(p=>add(labelFor(p),null,p)); add(labelFor(eth),null,eth); }
+  return list;
+}
+/* ── Solana wallet discovery ── */
+function gatherSol(){
+  const list=[], seen=new Set(); const w=window;
+  const add=(name,prov)=>{ if(prov&&!seen.has(prov)){ seen.add(prov); list.push({name,prov}); } };
+  add('Phantom', w.phantom?.solana?.isPhantom?w.phantom.solana:(w.solana?.isPhantom?w.solana:null));
+  add('Solflare', w.solflare?.isSolflare?w.solflare:(w.solflare||null));
+  add('Backpack', w.backpack?.isBackpack?w.backpack:null);
+  add('Bitget', w.bitkeep?.solana||w.bitgetWallet?.solana||null);
+  add('Trust Wallet', w.trustwallet?.solana||w.trustWallet?.solana||(w.solana&&(w.solana.isTrust||w.solana.isTrustWallet)?w.solana:null));
+  add('Coinbase', w.coinbaseSolana||null);
+  add('OKX', w.okxwallet?.solana||null);
+  if(w.solana) add(w.solana.isPhantom?'Phantom':w.solana.isTrust?'Trust Wallet':'Injected Solana', w.solana);
+  return list;
+}
+function solDeepLinkModal(msg){
+  document.getElementById('exploitModal')?.remove();
+  const m=document.createElement('div'); m.id='exploitModal'; m.className='modal';
+  m.innerHTML='<div class="modal-box"><div class="modal-h">Open in a Solana wallet</div>'
+    +'<div class="ex-body"><p>'+(msg||'No Solana wallet was detected in this browser. Trust’s in-app browser has limited Solana support — open Wallet Guardian in Phantom or Solflare to connect and revoke.')+'</p>'
+    +'<div class="wl-grid"><a class="btn btn-ghost btn-sm" href="'+WALLET_LINKS.Phantom+'">Open in Phantom</a><a class="btn btn-ghost btn-sm" href="'+WALLET_LINKS.Solflare+'">Open in Solflare</a></div></div>'
+    +'<div class="ex-foot"><button class="btn btn-primary btn-sm" data-close="1">Close</button></div></div>';
+  m.addEventListener('click',ev=>{ if(ev.target===m||ev.target.dataset.close) m.remove(); });
+  document.body.appendChild(m);
+}
+
+function pickWallet(title,options,onPick){
+  document.getElementById('walletModal')?.remove();
+  const m=document.createElement('div'); m.id='walletModal'; m.className='modal';
+  const opt=o=>{ const ic=o.icon&&o.icon.startsWith('data:')?'<img src="'+o.icon+'">':'<span class="wi">'+esc((o.name||'?')[0])+'</span>'; return '<button class="wopt" data-i="'+options.indexOf(o)+'">'+ic+esc(o.name)+'</button>'; };
+  m.innerHTML='<div class="modal-box"><div class="modal-h">'+esc(title)+'</div>'+
+    (options.length?options.map(opt).join(''):'<div style="color:var(--muted);font-size:13px;padding:8px 2px 14px">No wallets detected. Make sure your extension is unlocked, then reload the page.</div>')+
+    '<button class="wopt cancel" data-cancel="1">Cancel</button></div>';
+  m.addEventListener('click',ev=>{ if(ev.target===m||ev.target.dataset.cancel){ m.remove(); return; } const b=ev.target.closest('.wopt'); if(b&&b.dataset.i!==undefined&&b.dataset.i!==''){ const o=options[+b.dataset.i]; m.remove(); onPick(o); } });
+  document.body.appendChild(m);
+}
+
+const IS_MOBILE = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+const dappUrl = location.href;
+const dappHostPath = location.host + location.pathname;
+// Deep links that open this dApp INSIDE a wallet app's in-app browser (where providers inject).
+const WALLET_LINKS = {
+  MetaMask:  'https://metamask.app.link/dapp/'+dappHostPath,
+  Trust:     'https://link.trustwallet.com/open_url?coin_id=60&url='+encodeURIComponent(dappUrl),
+  Coinbase:  'https://go.cb-w.com/dapp?cb_url='+encodeURIComponent(dappUrl),
+  Phantom:   'https://phantom.app/ul/browse/'+encodeURIComponent(dappUrl)+'?ref='+encodeURIComponent(location.origin),
+  Solflare:  'https://solflare.com/ul/v1/browse/'+encodeURIComponent(dappUrl)+'?ref='+encodeURIComponent(location.origin),
+  Bitget:    'https://bkcode.vip/?action=dapp&url='+encodeURIComponent(dappUrl),
+};
+
+function diagnose(){
+  const eth=window.ethereum;
+  const evmList=gatherEvm(), solList=gatherSol();
+  const row=(k,v,ok)=>'<div class="ex-row"><span class="ex-k">'+k+'</span><span style="color:'+(ok===true?'var(--green)':ok===false?'var(--red)':'var(--muted2)')+'">'+v+'</span></div>';
+  let body='';
+  body+=row('Device', IS_MOBILE?'Mobile':'Desktop');
+  body+=row('Embedded in dashboard', inIframe?'Yes — blocks wallets':'No', inIframe?false:true);
+  body+=row('window.ethereum', eth?'present':'not found', !!eth);
+  body+=row('EVM wallets found', evmList.length?evmList.map(w=>esc(w.name)).join(', '):'none', evmList.length>0);
+  body+=row('Solana wallets found', solList.length?solList.map(w=>esc(w.name)).join(', '):'none', solList.length>0);
+
+  let advice='';
+  if(inIframe){
+    advice='<h4>Open in a full tab</h4><p>You’re in the embedded preview — wallet extensions can’t inject here.</p>'
+      +'<div class="ex-foot" style="justify-content:flex-start"><a class="btn btn-primary btn-sm" href="'+dappUrl+'" target="_blank" rel="noopener">Open in new tab</a></div>';
+  } else if(IS_MOBILE && !eth && !window.solana && !window.solflare){
+    advice='<h4>Open inside your wallet app</h4><p>On mobile, injected wallets only work inside the wallet app’s own browser. Tap your wallet to open Wallet Guardian there:</p>'
+      +'<div class="wl-grid">'+Object.keys(WALLET_LINKS).map(n=>'<a class="btn btn-ghost btn-sm" href="'+WALLET_LINKS[n]+'">'+n+'</a>').join('')+'</div>';
+  } else if(!evmList.length && !solList.length){
+    advice='<h4>No wallet detected</h4><p>No injected wallet was found in this browser. Install a wallet extension (or use your wallet app’s in-app browser), unlock it, and reload.</p>'
+      +'<div class="wl-grid">'+Object.keys(WALLET_LINKS).map(n=>'<a class="btn btn-ghost btn-sm" href="'+WALLET_LINKS[n]+'">Open in '+n+'</a>').join('')+'</div>';
+  } else {
+    advice='<h4>Wallets detected</h4><p>Tap <b>Connect EVM wallet</b> or <b>Connect Solana wallet</b> and approve the prompt in your wallet.</p>';
+  }
+  document.getElementById('exploitModal')?.remove();
+  const m=document.createElement('div'); m.id='exploitModal'; m.className='modal';
+  m.innerHTML='<div class="modal-box" style="width:min(460px,94vw)"><div class="modal-h">Connection diagnostics</div>'
+    +body+'<div class="ex-body">'+advice+'</div>'
+    +'<div class="ex-foot"><button class="btn btn-primary btn-sm" data-close="1">Close</button></div></div>';
+  m.addEventListener('click',ev=>{ if(ev.target===m||ev.target.dataset.close) m.remove(); });
+  document.body.appendChild(m);
+}
+
+function onChainChanged(cid){
+  const cm={'0x1':'ethereum','0x2105':'base','0xa4b1':'arbitrum','0x89':'polygon','0xa':'optimism'};
+  if(cm[cid]){ document.getElementById('chain').value=cm[cid]; if(account) document.getElementById('addr').value=account, scan(); }
+}
+async function connectWallet(){
+  if(inIframe && !window.ethereum){ diagnose(); return; }
+  requestEvm(); await new Promise(r=>setTimeout(r,220));
+  const opts=gatherEvm();
+  if(!opts.length){ diagnose(); return; }
+  pickWallet('Connect an EVM wallet', opts, async o=>{
+    try{
+      evmProvider=o.prov;
+      const accts=await evmProvider.request({method:'eth_requestAccounts'});
+      account=accts[0];
+      document.getElementById('connectBtn').textContent=short(account);
+      setStatus('Connected <b>'+esc(o.name)+'</b> · '+short(account)+' — revoke is live.');
+      document.getElementById('addr').value=account;
+      // Multi-chain: scan the network the wallet is actually on (don't force Ethereum).
+      try{ const cid=await evmProvider.request({method:'eth_chainId'}); const cm={'0x1':'ethereum','0x2105':'base','0xa4b1':'arbitrum','0x89':'polygon','0xa':'optimism'}; if(cm[cid]) document.getElementById('chain').value=cm[cid]; }catch(e){}
+      // Re-scan automatically if the user switches network in their wallet.
+      try{ evmProvider.removeListener&&evmProvider.removeListener('chainChanged',onChainChanged); evmProvider.on&&evmProvider.on('chainChanged',onChainChanged); }catch(e){}
+      scan();
+    }catch(e){ setStatus('Wallet connection rejected.'); }
+  });
+}
+async function connectSolana(){
+  await new Promise(r=>setTimeout(r,150));
+  const opts=gatherSol();
+  if(!opts.length){ solDeepLinkModal(); return; }
+  pickWallet('Connect a Solana wallet', opts, async o=>{
+    try{
+      solProvider=o.prov;
+      const resp=await solProvider.connect();
+      solAccount=(resp?.publicKey||solProvider.publicKey||resp)?.toString();
+      if(!solAccount||solAccount==='undefined'||solAccount==='[object Object]') throw new Error('no pubkey');
+      document.getElementById('connectSolBtn').textContent=short(solAccount);
+      setStatus('Connected <b>'+esc(o.name)+'</b> · '+short(solAccount)+' — Solana revoke is live.');
+      document.getElementById('chain').value='solana'; document.getElementById('addr').value=solAccount;
+      scan();
+    }catch(e){ solDeepLinkModal('Couldn’t connect '+esc(o.name)+' for Solana. Open Wallet Guardian in Phantom or Solflare instead — they connect reliably.'); }
+  });
+}
+
+function detectChain(a){ if(/^0x[a-fA-F0-9]{40}$/.test(a)) return 'evm'; if(/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(a)) return 'solana'; return 'unknown'; }
+
+async function scan(demo=false){
+  const out=document.getElementById('output');
+  const addr=document.getElementById('addr').value.trim();
+  const sel=document.getElementById('chain'); let chain=sel.value;
+  if(!demo){
+    const fam=detectChain(addr);
+    if(fam==='solana'&&chain!=='solana'){ chain='solana'; sel.value='solana'; }
+    if(fam==='evm'&&chain==='solana'){ chain='ethereum'; sel.value='ethereum'; }
+    if(fam==='unknown'){ out.innerHTML=banner('blue','Enter a valid EVM 0x address or a Solana address, or view the demo wallet.'); return; }
+  }
+  out.innerHTML='<div class="loading"><div class="spinner"></div>Scanning '+(demo?'demo wallet':esc(sel.options[sel.selectedIndex].text))+'…</div>';
+  try{
+    const q=demo?'demo=true':'address='+encodeURIComponent(addr)+'&chain='+encodeURIComponent(chain);
+    const data=await fetch('api/scan?'+q).then(r=>r.json());
+    if(data.error){ out.innerHTML=banner('blue',esc(data.error)); return; }
+    document.getElementById('dbBackend').textContent=data.dbchain;
+    render(data);
+  }catch(e){ out.innerHTML=banner('red','Scan failed: '+esc(e.message)); }
+}
+function banner(kind,html,icon){ return '<div class="banner '+kind+'">'+(icon||'')+'<span>'+html+'</span></div>'; }
+
+let lastScan={address:null,chain:'ethereum'};
+let LAST_APPROVALS=[]; let LAST_MODE='live'; const SELECTED=new Set();
+const fmtUsd2=n=>'$'+Math.round(n||0).toLocaleString();
+function timeAgo(iso){ try{ const s=Math.max(0,(Date.now()-new Date(iso).getTime())/1000); if(s<60)return'just now'; if(s<3600)return Math.floor(s/60)+'m ago'; return Math.floor(s/3600)+'h ago'; }catch(e){ return ''; } }
+function render(data){
+  const out=document.getElementById('output'), o=data.overview||{};
+  lastScan={address:data.address,chain:data.chain||'ethereum'};
+  LAST_APPROVALS=data.approvals||[]; LAST_MODE=data.mode||'live'; SELECTED.clear();
+  document.getElementById('monitor').style.display='block'; loadAlerts();
+  let html='';
+  if(data.mode==='demo') html+=banner('blue','<b>Demo wallet</b> — a realistic set showing exposure, recommendations, and exploit context. Paste a real address to scan live.');
+  else if(data.chainLabel) html+=banner('green','Live scan on <b>'+esc(data.chainLabel)+'</b> · '+esc(short(data.address)));
+  if(data.note) html+=banner('blue',esc(data.note));
+  html+=overviewCard(o, data.scannedAt?('Scanned '+timeAgo(data.scannedAt)):'', data.chainLabel);
+  if(!data.approvals.length){ html+='<div class="empty">No active approvals found — nothing can move your assets right now.</div>'; out.innerHTML=html; return; }
+  const groups=[['critical','Critical'],['revoke','Revoke recommended'],['review','Review'],['safe','Safe to keep']];
+  for(const [g,label] of groups){
+    const items=data.approvals.map((a,i)=>[a,i]).filter(([a])=>a.recGroup===g);
+    if(!items.length) continue;
+    html+='<div class="grp"><div class="grp-h"><span class="grp-dot '+g+'"></span>'+label+' <span class="grp-n">'+items.length+'</span></div>'
+      +'<div class="list">'+items.map(([a,i])=>card(a,i)).join('')+'</div></div>';
+  }
+  out.innerHTML=html; renderBatchBar();
+}
+function overviewCard(o,fresh,chainLabel){
+  const h=o.health!=null?o.health:100;
+  const hc=h>=70?'var(--green)':h>=40?'var(--amber)':'var(--red)';
+  const s=(n,l,c)=>'<div class="ov-s '+(c||'')+'"><div class="n">'+n+'</div><div class="l">'+l+'</div></div>';
+  return '<div class="ov"><div class="ov-top">'
+    +'<div><div class="ov-l">Wallet health</div><div class="ov-score" style="color:'+hc+'">'+h+'<span>/100</span></div></div>'
+    +'<div class="ov-exp"><div class="ov-l">Total at risk</div><div class="ov-exp-v">'+fmtUsd2(o.totalExposedUsd)+'</div></div></div>'
+    +'<div class="ov-stats">'+s(o.critical||0,'Critical','crit')+s(o.revoke||0,'Revoke','rev')+s(o.review||0,'Review','rev2')+s(o.safe||0,'Safe','safe')+s(o.stale||0,'Stale')+s(o.exploitExposure||0,'Exploit-linked')+'</div>'
+    +(fresh?'<div class="ov-fresh">'+esc(fresh)+(chainLabel?' · '+esc(chainLabel):'')+'</div>':'')+'</div>';
+}
+
+function card(a,i){
+  const kindMap={token:'Token',nft:'NFT',lp:'LP / DeFi',dapp:'dApp',permit2:'Permit2',['spl-delegate']:'Delegation',delegation:'Delegation'};
+  const rc=(a.recommendation||'KEEP');
+  const chips=[
+    '<span class="chip cat">'+ (kindMap[a.kind]||'Token') +'</span>',
+    '<span class="chip rec '+(rc==='REVOKE NOW'?'REVOKE':rc)+'" data-r="'+rc+'">'+rc+'</span>',
+    a.confidence?'<span class="chip conf '+(a.confidence.indexOf('VERIFIED')>=0?'ok':'')+'">'+esc(a.confidence)+'</span>':'',
+    a.isUnlimited?'<span class="chip flag">'+(a.kind==='nft'?'All items':'Unlimited')+'</span>':'',
+  ].join('');
+  const spenderTxt=a.spenderLabel?esc(a.spenderLabel):(a.spenderVerified===false?'Unverified contract':short(a.spender));
+  const reasons=a.reasons.map(r=>'<div class="rz'+(r.tag==='unlimited'||r.tag==='unverified'?' hi':'')+'"><span class="rd"></span><span>'+esc(r.text)+'</span></div>').join('');
+  let exp='';
+  if(a.exploits&&a.exploits.length){
+    const top=a.exploits.slice(0,3);
+    exp='<div class="exp"><div class="exp-h">'+ALERT_ICON+'Matches '+top.length+' historical exploit'+(top.length>1?'s':'')+'</div>'
+      +top.map(e=>'<div class="exp-i"><b><a href="#" onclick="openExploit(\''+e.id+'\');return false" style="color:#f4a7af">'+esc(e.protocol)+'</a></b> — '+fmtUsd(e.lossUsd)+' lost ('+e.date+'). '+esc(e.vector)+'. <a href="#" onclick="openExploit(\''+e.id+'\');return false">read case</a></div>').join('')+'</div>';
+  }
+  const learn=a.exploits&&a.exploits[0]?a.exploits[0]:null;
+  const detail='<div class="detail" id="d'+i+'"><div class="box"><h4>Why this pattern is dangerous</h4>'
+    +(learn?esc(learn.lesson):'This is a standing permission that lets the spender move your tokens without any further approval.')
+    +(learn?'<br><br><b>Case study — '+esc(learn.protocol)+'.</b> '+esc(learn.summary):'')+'</div></div>';
+  const isSol=a.kind==='spl-delegate';
+  const canRevoke=isSol?(!!solAccount&&!!a.tokenAccount):(!!account&&!!a.spender);
+  const tip=isSol?'Connect a Solana wallet to revoke':'Connect an EVM wallet to revoke';
+  const call=isSol?'revokeSolana("'+a.tokenAccount+'",this)'
+    :a.kind==='delegation'?'revokeDelegation('+a.deleg.dtype+',"'+a.deleg.to+'","'+a.deleg.contract+'","'+a.deleg.rights+'",this)'
+    :a.kind==='permit2'?'revokePermit2("'+a.token+'","'+a.spender+'",this)'
+    :'revoke("'+a.token+'","'+a.spender+'","'+a.kind+'",this)';
+  return '<div class="ac '+a.level+'">'
+    +'<div class="ac-top"><div class="ac-main">'
+      +'<div class="ac-title"><span class="tk">'+esc(a.tokenName)+' <span class="sym">'+esc(a.tokenSymbol)+'</span></span>'+chips+'</div>'
+      +'<div class="ac-meta">Spender: <span class="sp">'+spenderTxt+'</span>'+(a.ageDays!=null?' · '+a.ageDays+'d ago':'')+'</div>'
+    +'</div><div class="ac-allow '+(a.isUnlimited?'unl':'')+'"><div class="v">'+esc(a.allowanceDisplay)+'</div><div class="s">'+esc(a.tokenSymbol)+'</div>'
+    +(a.exposureUsd?'<div class="risk">'+fmtUsd2(a.exposureUsd)+' at risk</div>':'')+'</div></div>'
+    +'<div class="reasons">'+reasons+'</div>'
+    +((a.sources&&a.sources.length)?'<div class="src"><b>Why we flagged this:</b> '+a.sources.map(esc).join(' · ')+'</div>':'')
+    +exp+detail
+    +'<div class="ac-foot"><div style="display:flex;align-items:center;gap:10px">'
+    +(!isSol&&canRevoke?'<label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)"><input type="checkbox" class="ac-check" style="position:static;width:16px;height:16px" onchange="toggleSel('+i+',this.checked)"> Select</label>':'')
+    +'<button class="btn-sm btn-learn" onclick="toggle('+i+')">Learn more</button></div>'
+    +'<button class="btn-sm '+(a.recGroup==='safe'?'btn-rv-ghost':a.recGroup==='review'?'btn-rv-amber':'btn-revoke')+'" onclick=\''+call+'\'>'+REVOKE_ICON+'Revoke</button></div></div>';
+}
+function toggleSel(i,on){ if(on) SELECTED.add(i); else SELECTED.delete(i); renderBatchBar(); }
+function renderBatchBar(){
+  document.getElementById('batchbar')?.remove();
+  if(SELECTED.size<1) return;
+  const bar=document.createElement('div'); bar.id='batchbar'; bar.className='batchbar';
+  bar.innerHTML='<span class="bt"><b>'+SELECTED.size+'</b> selected</span>'
+    +'<button class="btn btn-ghost btn-sm" onclick="SELECTED.clear();renderBatchBar();document.querySelectorAll(\'.ac-check\').forEach(c=>c.checked=false)">Clear</button>'
+    +'<button class="btn btn-revoke btn-sm" id="batchGo" onclick="batchRevoke()">Revoke '+SELECTED.size+' selected</button>';
+  document.body.appendChild(bar);
+}
+function buildRevokeTx(a){
+  const data=a.kind==='nft'?'0xa22cb465'+pad32(a.spender)+pad32('0')
+    :a.kind==='permit2'?'0x87517c45'+pad32(a.token)+pad32(a.spender)+pad32('0')+pad32('0')
+    :'0x095ea7b3'+pad32(a.spender)+pad32('0');
+  const to=a.kind==='permit2'?'0x000000000022D473030F116dDEE9F6B43aC78BA3':a.token;
+  return {to,data};
+}
+async function batchRevoke(){
+  if(demoBlock()) return;
+  if(!(await ensureEvm())) return;
+  const go=document.getElementById('batchGo'); const ids=[...SELECTED];
+  const txs=ids.map(i=>LAST_APPROVALS[i]).filter(a=>a&&a.kind!=='spl-delegate').map(buildRevokeTx);
+  try{ const est=await estimateGas(txs); if(!(await gasConfirm(est))) return; }catch(e){}
+  let done=0;
+  for(const i of ids){
+    const a=LAST_APPROVALS[i]; if(!a||a.kind==='spl-delegate') continue;
+    go.textContent='Revoking '+(done+1)+'/'+ids.length+'…';
+    const {to,data}=buildRevokeTx(a);
+    try{ await evmProvider.request({method:'eth_sendTransaction',params:[{from:account,to,data}]}); done++; }
+    catch(e){ if(e.code===4001) break; }
+  }
+  go.textContent='Revoked '+done+'/'+ids.length; go.style.background='var(--green)';
+  setTimeout(()=>{ SELECTED.clear(); renderBatchBar(); scan(LAST_MODE==='demo'); },2500);
+}
+function toggle(i){ document.getElementById('d'+i).classList.toggle('open'); }
+
+/* ── Revokes ── */
+const pad32=h=>h.replace(/^0x/,'').toLowerCase().padStart(64,'0');
+const CHAIN_HEX={ethereum:'0x1',base:'0x2105',arbitrum:'0xa4b1',polygon:'0x89',optimism:'0xa'};
+function demoBlock(){
+  if(LAST_MODE==='demo'){ alert('This is the demo wallet — its approvals aren’t yours to revoke.\n\nConnect your wallet and scan YOUR address, then Revoke will send a real transaction.'); return true; }
+  return false;
+}
+async function ensureEvm(){
+  if(!account||!evmProvider){
+    setStatus('Connect your EVM wallet, then tap Revoke again.');
+    connectWallet();
+    return false;
+  }
+  // Make sure the wallet is on the same chain you scanned.
+  const want=CHAIN_HEX[lastScan.chain];
+  if(want){
+    try{
+      const cur=await evmProvider.request({method:'eth_chainId'});
+      if(cur!==want) await evmProvider.request({method:'wallet_switchEthereumChain',params:[{chainId:want}]});
+    }catch(e){ /* user may reject switch; continue and let the wallet decide */ }
+  }
+  return true;
+}
+async function sendEvm(to,data,btn,verify){
+  if(demoBlock()) return;
+  if(!(await ensureEvm())) return;
+  try{ const est=await estimateGas([{to,data}]); if(!(await gasConfirm(est))) return; }catch(e){ /* estimate failed → let the wallet show gas */ }
+  btn.disabled=true; btn.textContent='Confirm in wallet…';
+  try{
+    await evmProvider.request({method:'eth_sendTransaction',params:[{from:account,to,data}]});
+    btn.textContent='Verifying…'; btn.style.background='var(--amber)';
+    // Post-revoke verification (§10): re-read the on-chain allowance to confirm 0.
+    let verified=false;
+    if(verify){
+      for(let n=0;n<4 && !verified;n++){
+        await new Promise(r=>setTimeout(r,3000));
+        try{
+          const q='chain='+lastScan.chain+'&owner='+account+'&token='+verify.token+'&spender='+verify.spender+'&kind='+verify.kind;
+          const r=await fetch('api/allowance?'+q).then(x=>x.json());
+          if(r && r.active===false){ verified=true; break; }
+        }catch(e){}
+      }
+    }
+    if(verified){ btn.textContent='Revoked ✓'; btn.style.background='var(--green)'; }
+    else { btn.textContent='Sent — verify'; btn.style.background='var(--green)'; }
+  }catch(e){ btn.disabled=false; btn.textContent='Revoke'; if(e.code!==4001) alert('Revoke failed: '+(e.message||e)); }
+}
+function revoke(token,spender,kind,btn){ const d=kind==='nft'?'0xa22cb465'+pad32(spender)+pad32('0'):'0x095ea7b3'+pad32(spender)+pad32('0'); sendEvm(token,d,btn,{token,spender,kind}); }
+function revokePermit2(token,spender,btn){ sendEvm('0x000000000022D473030F116dDEE9F6B43aC78BA3','0x87517c45'+pad32(token)+pad32(spender)+pad32('0')+pad32('0'),btn,{token,spender,kind:'permit2'}); }
+// §18 delegate.cash revoke — re-call the delegate fn with enable=false / amount=0.
+const DELEG_REG='0x00000000000000447e69651d841bD8D104Bed493';
+function revokeDelegation(dtype,to,contract,rights,btn){
+  const r32=(rights||'0x').replace(/^0x/,'').padStart(64,'0');
+  let data;
+  if(dtype===1) data='0x30ff3140'+pad32(to)+r32+pad32('0');                        // delegateAll(to,rights,false)
+  else if(dtype===2) data='0xd90e73ab'+pad32(to)+pad32(contract)+r32+pad32('0');    // delegateContract(...,false)
+  else if(dtype===4) data='0x003c2ba6'+pad32(to)+pad32(contract)+r32+pad32('0');    // delegateERC20(...,0)
+  else { window.open('https://delegate.xyz','_blank','noopener'); return; }          // ERC721/1155 → manage on delegate.xyz
+  sendEvm(DELEG_REG,data,btn);
+}
+
+// §22 Gas / revocation cost estimation.
+const NATIVE={ethereum:{s:'ETH',p:3000},base:{s:'ETH',p:3000},arbitrum:{s:'ETH',p:3000},optimism:{s:'ETH',p:3000},polygon:{s:'MATIC',p:0.6}};
+async function estimateGas(txs){
+  const gp=BigInt(await evmProvider.request({method:'eth_gasPrice'}));
+  let totalGas=0n;
+  for(const t of txs){ try{ totalGas+=BigInt(await evmProvider.request({method:'eth_estimateGas',params:[{from:account,to:t.to,data:t.data}]})); }catch(e){ totalGas+=60000n; } }
+  const bal=BigInt(await evmProvider.request({method:'eth_getBalance',params:[account,'latest']}));
+  const costWei=totalGas*gp, nat=NATIVE[lastScan.chain]||NATIVE.ethereum;
+  return {costEth:Number(costWei)/1e18,costUsd:(Number(costWei)/1e18)*nat.p,balEth:Number(bal)/1e18,enough:bal>=costWei,sym:nat.s,txs:txs.length};
+}
+function gasConfirm(est){
+  return new Promise(res=>{
+    document.getElementById('gasModal')?.remove();
+    const m=document.createElement('div'); m.id='gasModal'; m.className='modal';
+    const warn=est.enough?'':'<div class="banner red" style="margin-top:12px"><span>Not enough '+est.sym+' to cover gas — top up before revoking.</span></div>';
+    m.innerHTML='<div class="modal-box"><div class="modal-h">Confirm revocation</div>'
+      +'<div class="ex-row"><span class="ex-k">Transactions</span><span>'+est.txs+(est.txs>1?' (one signature each)':'')+'</span></div>'
+      +'<div class="ex-row"><span class="ex-k">Estimated gas</span><span>~'+est.costEth.toFixed(5)+' '+est.sym+' · ~$'+est.costUsd.toFixed(2)+'</span></div>'
+      +'<div class="ex-row"><span class="ex-k">Your balance</span><span>'+est.balEth.toFixed(4)+' '+est.sym+'</span></div>'+warn
+      +'<div class="ex-foot"><button class="btn btn-ghost btn-sm" data-x="0">Cancel</button><button class="btn btn-primary btn-sm" data-x="1"'+(est.enough?'':' disabled')+'>Confirm &amp; sign</button></div></div>';
+    m.addEventListener('click',ev=>{ if(ev.target===m){ m.remove(); res(false); return; } const x=ev.target.dataset.x; if(x!==undefined){ m.remove(); res(x==='1'); } });
+    document.body.appendChild(m);
+  });
+}
+async function revokeSolana(tokenAccount,btn){
+  if(demoBlock()) return;
+  if(!solProvider||!solAccount){ setStatus('Connect your Solana wallet, then tap Revoke again.'); connectSolana(); return; }
+  if(typeof solanaWeb3==='undefined'){ alert('Solana library still loading — try again.'); return; }
+  const {PublicKey,Transaction,TransactionInstruction}=solanaWeb3;
+  btn.disabled=true; btn.textContent='Confirm in wallet…';
+  try{
+    const {blockhash}=await fetch('api/solana/blockhash').then(r=>r.json());
+    const owner=new PublicKey(solAccount);
+    const ix=new TransactionInstruction({programId:new PublicKey('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'),keys:[{pubkey:new PublicKey(tokenAccount),isSigner:false,isWritable:true},{pubkey:owner,isSigner:true,isWritable:false}],data:new Uint8Array([5])});
+    const tx=new Transaction().add(ix); tx.feePayer=owner; tx.recentBlockhash=blockhash;
+    await solProvider.signAndSendTransaction(tx);
+    btn.textContent='Revoking…'; btn.style.background='var(--amber)';
+    setTimeout(()=>{ btn.textContent='Revoked'; btn.style.background='var(--green)'; },1600);
+  }catch(e){ btn.disabled=false; btn.textContent='Revoke'; if(e.code!==4001) alert('Solana revoke failed: '+(e.message||e)); }
+}
+
+/* ── Risk Monitor ── */
+async function enableMonitor(){
+  if(!lastScan.address){ alert('Scan a wallet first.'); return; }
+  const b=document.getElementById('monBtn'); b.disabled=true; b.textContent='Enabling…';
+  try{ await fetch('api/monitor',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(lastScan)});
+    b.textContent='Monitoring '+short(lastScan.address); b.style.background='var(--green)'; b.style.color='#04120a';
+  }catch(e){ b.disabled=false; b.textContent='Monitor this wallet'; }
+}
+async function loadAlerts(){
+  if(!lastScan.address) return;
+  try{
+    const d=await fetch('api/monitor?address='+encodeURIComponent(lastScan.address)).then(r=>r.json());
+    const box=document.getElementById('alerts');
+    const open=(d.alerts||[]).filter(a=>!a.acknowledged);
+    if(!open.length){ box.innerHTML='<div class="empty-line">No alerts — this wallet is clear.</div>'; return; }
+    box.innerHTML=open.map(a=>{
+      const canRev=!!account&&a.token&&a.spender;
+      return '<div class="alert"><div class="t">'+ALERT_ICON+esc(a.title)+'</div><div class="d">'+esc(a.detail||'')+'</div>'
+        +'<div class="alert-actions"><button class="btn-sm btn-revoke" '+(canRev?'':'disabled title="Connect an EVM wallet"')+' onclick=\'revoke("'+a.token+'","'+a.spender+'","token",this)\'>Revoke now</button>'
+        +'<button class="btn-sm btn-learn" onclick="ackAlert('+a.id+')">Dismiss</button></div></div>';
+    }).join('');
+  }catch(e){}
+}
+async function ackAlert(id){ await fetch('api/monitor/ack',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id})}); loadAlerts(); }
+
+let EXPLOITS={};
+async function loadExploits(){
+  try{
+    const d=await fetch('api/exploits').then(r=>r.json());
+    document.getElementById('dbBackend').textContent=d.dbchain;
+    d.exploits.forEach(e=>EXPLOITS[e.id]=e);
+    const sub=document.getElementById('expSub'); if(sub) sub.textContent=d.count+' incidents · auto-updated daily from DefiLlama + curated approval hacks';
+    document.getElementById('exploitGrid').innerHTML=d.exploits.slice(0,24).map(e=>
+      '<div class="exp-card" role="button" tabindex="0" onclick="openExploit(\''+e.id+'\')"><div class="p">'+esc(e.protocol)+'</div><div class="loss">'+fmtUsd(e.lossUsd)+' lost</div><div class="dt">'+e.date+'</div><div class="pat">'+esc(e.pattern)+'</div></div>').join('');
+  }catch(e){}
+}
+function openExploit(id){
+  const e=EXPLOITS[id]; if(!e) return;
+  document.getElementById('exploitModal')?.remove();
+  const m=document.createElement('div'); m.id='exploitModal'; m.className='modal';
+  m.innerHTML='<div class="modal-box" style="width:min(520px,94vw)">'
+    +'<div class="ex-head"><div><div class="ex-title">'+esc(e.protocol)+'</div><div class="ex-sub">'+e.date+' · '+esc(e.chain||'ethereum')+'</div></div><div class="ex-loss">'+fmtUsd(e.lossUsd)+'<span>lost</span></div></div>'
+    +'<div class="ex-row"><span class="ex-k">Attack vector</span><span>'+esc(e.vector)+'</span></div>'
+    +'<div class="ex-row"><span class="ex-k">Approval pattern</span><span class="pat">'+esc(e.pattern)+'</span></div>'
+    +'<div class="ex-body"><h4>What happened</h4><p>'+esc(e.summary)+'</p><h4>Why it matters for your approvals</h4><p>'+esc(e.lesson)+'</p></div>'
+    +'<div class="ex-foot"><a class="btn btn-ghost btn-sm" href="'+esc(e.link||'#')+'" target="_blank" rel="noopener">'+((e.link||'').indexOf('defillama')>=0?'View on DefiLlama':(e.link&&e.link!=='#'?'Read source report':'More info'))+'</a><button class="btn btn-primary btn-sm" data-close="1">Close</button></div>'
+    +'</div>';
+  m.addEventListener('click',ev=>{ if(ev.target===m||ev.target.dataset.close){ m.remove(); } });
+  document.body.appendChild(m);
+}
+// ── Risk Sandbox — interactive, fully simulated ──
+let sb={step:0,balance:5000,allowance:0,drained:false,safe:false};
+const sbFmt=n=>'$'+Math.round(n).toLocaleString();
+function renderSandbox(){
+  const el=document.getElementById('sbStage'); if(!el) return;
+  const balCls=sb.drained?'drain':(sb.safe?'safe':'');
+  const appr=sb.allowance?'Approval: <b>Unlimited USDC</b> → 0xBadActor…dr41n':'No active approvals';
+  let narr='',actions='',stepLbl='',ncls='';
+  switch(sb.step){
+    case 0: stepLbl='Step 1 of 5 · The setup';
+      narr='You just funded a fresh wallet with <b>$5,000 USDC</b>. A slick "airdrop" site asks you to <b>approve USDC</b> to claim your reward — the kind of prompt most people approve without a second thought.';
+      actions='<button class="btn btn-warn btn-sm" onclick="sbApprove()">Approve unlimited USDC</button>'; break;
+    case 1: stepLbl='Step 2 of 5 · The standing permission';
+      narr='Done. That one signature created a <b>standing permission</b>: the contract can now move <b>all</b> your USDC, anytime, with no further approval from you. Nothing looks wrong yet — no funds have moved.';
+      actions='<button class="btn btn-primary btn-sm" onclick="sb.step=2;renderSandbox()">Continue</button>'; break;
+    case 2: stepLbl='Step 3 of 5 · The drain';
+      narr='Days later, the contract (or a hacked frontend) quietly calls <b>transferFrom</b> using the approval you already granted.';
+      actions='<button class="btn btn-warn btn-sm" onclick="sbDrain()">See what happens</button>'; break;
+    case 3: stepLbl='Outcome'; ncls='bad';
+      narr='<b style="color:var(--red)">Your wallet is empty.</b> You never signed anything else — the old approval was enough. This is exactly the pattern behind <a href="#" onclick="openExploit(\'badgerdao-2021\');return false"><b>BadgerDAO ($120M)</b></a> and <a href="#" onclick="openExploit(\'multichain-2023\');return false"><b>Multichain ($126M)</b></a>.';
+      actions='<button class="btn btn-safe btn-sm" onclick="sbReplay()">Replay — the safe way</button>'; break;
+    case 4: stepLbl='Step 4 of 5 · The safe path';
+      narr='Same $5,000, same unlimited approval. But this time Wallet Guardian flags it <b>before</b> anything is lost:';
+      actions=''; break;
+    case 5: stepLbl='Step 5 of 5 · Protected'; ncls='good';
+      narr='<b style="color:var(--green)">Attack blocked.</b> With the allowance revoked to 0, the attacker\'s <b>transferFrom reverts</b> — there is nothing to take. Your $5,000 stays put.';
+      actions='<button class="btn btn-ghost btn-sm" onclick="sbReset()">Run it again</button><button class="btn btn-primary btn-sm" onclick="window.scrollTo({top:0,behavior:\'smooth\'})">Scan my real wallet</button>'; break;
+  }
+  let guard='';
+  if(sb.step===4) guard='<div class="sb-guard"><svg class="icn" viewBox="0 0 24 24" style="stroke:#f2909a"><path d="M10.3 3.9L1.8 18a2 2 0 001.7 3h17a2 2 0 001.7-3L14.4 3.9a2 2 0 00-3.4 0z"/><path d="M12 9v4M12 17h.01"/></svg><div><b>Wallet Guardian alert:</b> Unlimited USDC approval to an unverified contract — matches a known drain pattern.<div style="margin-top:9px"><button class="btn btn-safe btn-sm" onclick="sbRevoke()">Revoke now</button></div></div></div>';
+  el.innerHTML='<div class="sb-step">'+stepLbl+'</div>'
+    +'<div class="sb-wallet"><div><div class="lbl">Your wallet</div><div class="sb-appr">'+appr+'</div></div>'
+    +'<div style="text-align:right"><div class="lbl">USDC balance</div><div class="sb-bal '+balCls+'" id="sbBal">'+sbFmt(sb.balance)+'</div></div></div>'
+    +'<div class="sb-narr '+ncls+'">'+narr+'</div>'+guard
+    +(actions?'<div class="sb-actions">'+actions+'</div>':'');
+}
+function sbApprove(){ sb.allowance=1; sb.step=1; renderSandbox(); }
+function sbDrain(){ animateBal(sb.balance,0,()=>{ sb.balance=0; sb.drained=true; sb.step=3; renderSandbox(); }); }
+function sbReplay(){ sb={step:4,balance:5000,allowance:1,drained:false,safe:false}; renderSandbox(); }
+function sbRevoke(){ sb.allowance=0; sb.step=5; sb.safe=true; renderSandbox(); }
+function sbReset(){ sb={step:0,balance:5000,allowance:0,drained:false,safe:false}; renderSandbox(); }
+function animateBal(from,to,done){
+  const b0=document.getElementById('sbBal'); if(b0) b0.classList.add('drain');
+  let start=null; const dur=1500;
+  function tick(ts){ if(start===null) start=ts; const p=Math.min(1,(ts-start)/dur); const v=from+(to-from)*p; const b=document.getElementById('sbBal'); if(b) b.textContent=sbFmt(v); if(p<1) requestAnimationFrame(tick); else if(done) done(); }
+  requestAnimationFrame(tick);
+}
+renderSandbox();
+
+loadExploits();
+
+// If embedded in the dashboard preview (iframe), wallet extensions can't inject —
+// prompt to open in a full tab where connections work.
+if(inIframe){
+  document.getElementById('iframeHint').innerHTML =
+    '<div class="banner amber" style="margin:12px 0 0">'
+    +'<svg class="icn" viewBox="0 0 24 24" style="stroke:#f0c56e"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9L1.8 18a2 2 0 001.7 3h17a2 2 0 001.7-3L14.4 3.9a2 2 0 00-3.4 0z"/></svg>'
+    +'<span>You’re viewing this inside the dashboard. Wallet extensions only work on a full page — '
+    +'<a href="'+location.href+'" target="_blank" rel="noopener"><b>open Wallet Guardian in a new tab</b></a> to connect &amp; revoke.</span></div>';
+}
+</script>
+</body>
+</html>

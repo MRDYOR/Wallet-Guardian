@@ -1,0 +1,76 @@
+{
+  "address": "0xDEMO000000000000000000000000000000000000",
+  "approvals": [
+    {
+      "kind": "lp",
+      "token": "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+      "spender": "0x1111111254EEB25477B68fb85Ed929f73A960582",
+      "allowance": "115792089237316195423570985008687907853269984665640564039457584007913129639935",
+      "meta": { "name": "USD Coin", "symbol": "USDC", "decimals": 6 },
+      "ageDays": 412,
+      "balanceUi": 8421,
+      "spenderVerified": true,
+      "spenderLabel": "1inch Aggregation Router (DEX)"
+    },
+    {
+      "kind": "token",
+      "token": "0xdAC17F958D2ee523a2206206994597C13D831ec7",
+      "spender": "0x000000000000Ad05Ccc4F10045630fb830B95127",
+      "allowance": "115792089237316195423570985008687907853269984665640564039457584007913129639935",
+      "meta": { "name": "Tether USD", "symbol": "USDT", "decimals": 6 },
+      "ageDays": 88,
+      "balanceUi": 3200,
+      "spenderVerified": false,
+      "spenderLabel": null
+    },
+    {
+      "kind": "nft",
+      "token": "0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D",
+      "spender": "0xEA7b7D11636425C4c1c26A67f8E093f6b6E5cD1e",
+      "allowance": "ALL",
+      "meta": { "name": "Bored Ape Yacht Club", "symbol": "BAYC", "decimals": 0 },
+      "ageDays": 300,
+      "spenderVerified": false,
+      "spenderLabel": "Unknown operator"
+    },
+    {
+      "kind": "lp",
+      "token": "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
+      "spender": "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D",
+      "allowance": "5000000000000000000",
+      "meta": { "name": "Wrapped Ether", "symbol": "WETH", "decimals": 18 },
+      "ageDays": 15,
+      "balanceUi": 1.2,
+      "spenderVerified": true,
+      "spenderLabel": "Uniswap V2 Router (LP)"
+    },
+    {
+      "kind": "token",
+      "token": "0x6B175474E89094C44Da98b954EedeAC495271d0F",
+      "spender": "0x881D40237659C251811CEC9c364ef91dC08D300C",
+      "allowance": "115792089237316195423570985008687907853269984665640564039457584007913129639935",
+      "meta": { "name": "Dai Stablecoin", "symbol": "DAI", "decimals": 18 },
+      "ageDays": 240,
+      "balanceUi": 500,
+      "spenderVerified": true,
+      "spenderLabel": "Metamask Swap Router (dApp)"
+    },
+    {
+      "kind": "permit2",
+      "token": "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+      "spender": "0xEf1c6E67703c7BD7107eed8303Fbe6EC2554BF6B",
+      "allowance": "1461501637330902918203684832716283019655932542975",
+      "meta": { "name": "USD Coin (via Permit2)", "symbol": "USDC", "decimals": 6 },
+      "ageDays": 30,
+      "balanceUi": 8421,
+      "spenderVerified": true,
+      "spenderLabel": "Permit2 → Uniswap Universal Router"
+    },
+    {
+      "kind": "delegation",
+      "dtype": 1,
+      "spender": "0x9C4C4f9d5E7A3aB6bE9f0eCa1c0d2b3A4c5D6e7F",
+      "token": null
+    }
+  ]
+}
